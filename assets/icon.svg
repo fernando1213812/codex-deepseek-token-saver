@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Codex DeepSeek Token Saver icon">
+  <defs>
+    <linearGradient id="bg" x1="30" y1="20" x2="226" y2="236" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17c3b2"/>
+      <stop offset="0.55" stop-color="#227c9d"/>
+      <stop offset="1" stop-color="#0b2545"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="78" y1="66" x2="190" y2="182" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff1a8"/>
+      <stop offset="1" stop-color="#ffb703"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="224" height="224" rx="48" fill="url(#bg)"/>
+  <path d="M62 158c34 34 98 34 132 0" fill="none" stroke="#dffbff" stroke-width="14" stroke-linecap="round"/>
+  <path d="M62 98c34-34 98-34 132 0" fill="none" stroke="#dffbff" stroke-width="14" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="128" cy="128" r="47" fill="url(#coin)" stroke="#fff7cc" stroke-width="8"/>
+  <path d="M128 92v72M104 116c0-15 48-15 48 0 0 22-48 10-48 32 0 17 48 17 48 0" fill="none" stroke="#6c4a00" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M199 58l8 17 18 7-18 7-8 18-8-18-18-7 18-7z" fill="#ffffff" opacity="0.9"/>
+</svg>
