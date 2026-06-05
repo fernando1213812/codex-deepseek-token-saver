@@ -1,0 +1,3 @@
+display_name: DeepSeek Token Saver
+short_description: Delegate low-risk drafts to DeepSeek and log estimated Codex token savings.
+default_prompt: Use DeepSeek for low-risk draft work, then audit the result with GPT-5.5 and report token savings.
