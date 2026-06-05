@@ -315,8 +315,16 @@ def render_room(room_root: Path, *, max_chars: int, include_full: bool) -> str:
                 *format_metadata(
                     [
                         ("timestamp", event.get("timestamp")),
+                        ("phase", event.get("phase")),
                         ("returncode", event.get("returncode")),
                         ("decision", event.get("decision")),
+                        ("model", event.get("model")),
+                        ("artifact_path", event.get("artifact_path")),
+                        ("transcript_path", event.get("transcript_path")),
+                        ("prompt_path", event.get("prompt_path")),
+                        ("skills_path", event.get("skills_path")),
+                        ("reasonix_home", event.get("reasonix_home")),
+                        ("target_codex_token_share", event.get("target_codex_token_share")),
                     ]
                 ),
                 "",

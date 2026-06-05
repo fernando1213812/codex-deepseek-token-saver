@@ -1,5 +1,23 @@
 # Changelog
 
+## v2.3.0 - 2026-06-06
+
+Reasonix body orchestration update.
+
+- Add `deepseek_reasonix.py`, a standard-library Codex orchestrator that
+  creates or reuses an Agent Room, writes a Codex brief into the room, builds a
+  temporary Reasonix skill pack, and runs both an execution pass and a strict
+  self-review pass.
+- Add mandatory multi-agent Reasonix guidance with implementer, tester, critic,
+  and docs subagent roles plus explicit peer-supervision rules.
+- Add `--skill-name`, `--skill-brief`, and `--image-brief` handoff fields so
+  Codex can pass local skill routing context and image descriptions into the
+  cheaper Reasonix body.
+- Extend transcript export so room events can surface Reasonix artifact paths,
+  transcript paths, prompt paths, model ids, and Codex token-share targets.
+- Add unit tests for the Reasonix orchestrator and include the new wrapper and
+  script in preflight compilation.
+
 ## v2.2.0 - 2026-06-06
 
 Default activation and transcript export update.

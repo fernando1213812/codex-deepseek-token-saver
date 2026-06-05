@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-当前版本：**v2.2.0**。参见 [更新日志](docs/changelog.md)。
+当前版本：**v2.3.0**。参见 [更新日志](docs/changelog.md)。
 
 把低风险、非最终阶段的 Codex 工作委托给 DeepSeek，记录 DeepSeek token 用量，并估算节省了多少 Codex token。GPT-5.5 仍然负责审核和最终正确性。
 
@@ -18,12 +18,12 @@ DeepSeek 很适合承担大量上下文和过程型工作，成本很低。但 C
 
 这个仓库提供一个只依赖 Python 标准库的小 CLI，以及一个 Codex skill，把“DeepSeek 负责过程，GPT-5.5 负责最终审核”的边界写清楚。
 
-## v2.2 新增内容
+## v2.3 新增内容
 
-- 为大部分低风险项目型任务增加默认激活规则，例如小 app、脚本、测试、文档、研究总结、重构草稿和批量编辑。
-- 明确不自动触发的场景：最终决策、密钥/auth、生产破坏性操作、紧急单行命令，以及用户明确要求 Codex-only。
-- 新增 `deepseek_transcript.py`，可把 persistent worker 或 Agent Room 的记录导出成可读 Markdown。
-- 更新 skill UI metadata，让 Codex 更容易识别“可以省 token 的项目型工作”，同时仍由 Codex 负责最终验证。
+- 新增 `deepseek_reasonix.py`，让 Codex 可以先建 Agent Room、写 orchestrator brief、生成 Reasonix skill pack，再让 Reasonix 跑执行和自审，最后交回 Codex 做最终审核。
+- 新增 Reasonix body mode，强制至少启用 implementer、tester、critic 三类子智能体；较大任务还可以加 docs 子智能体。
+- 新增 `--skill-name`、`--skill-brief`、`--image-brief`，让 Codex 能把已触发 skill 的摘要和图片文字说明传给不支持多模态的 DeepSeek/Reasonix。
+- 扩展 transcript 导出，room 事件现在会显示 Reasonix 的 artifact path、prompt path 和 transcript path，便于追溯。
 
 ## 路由策略
 
@@ -102,12 +102,35 @@ python3 deepseek_room.py review \
 python3 deepseek_room.py writer --room-id calculator-room
 ```
 
+运行完整的 Codex orchestrator + Reasonix body 流程：
+
+```sh
+python3 deepseek_reasonix.py \
+  --room-id overnight-room \
+  --skill-name deepseek-token-saver \
+  --skill-name diagnose \
+  --skill-brief "Codex 已把任务路由为低风险实现工作。DeepSeek/Reasonix 负责大部分过程输出，但 Codex 仍会测试并做最终审核。" \
+  --image-brief-file work/ui-brief.md \
+  "创建一个 room，强制多智能体 Reasonix 执行，然后返回可供 Codex 最终审核的候选结果。"
+```
+
+这个模式适合“用户给一句话，房间里跑便宜多智能体流程，Codex 最后把关”的场景，目标是把 Codex token 占比压低。
+
 导出最新 worker 或 room 的可读聊天记录：
 
 ```sh
 python3 deepseek_transcript.py \
   --latest \
   --out work/deepseek-transcript.md
+```
+
+只生成 room、prompt 和 Reasonix skill pack，不真正调用 API：
+
+```sh
+python3 deepseek_reasonix.py \
+  --room-id overnight-room \
+  --dry-run \
+  "只把房间和 prompt 搭好。"
 ```
 
 ## 输出示例

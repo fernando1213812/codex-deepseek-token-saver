@@ -27,6 +27,16 @@ Do not auto-activate when the user explicitly opts out, the request is a tiny
 direct command, the work involves secrets/auth/destructive production changes,
 or the turn requires high-stakes final judgment.
 
+When the user explicitly wants an always-on room, multi-agent cheap execution,
+or aggressive Codex token reduction, prefer Reasonix body mode:
+
+1. Codex interprets the request and triggers the relevant local skill(s).
+2. Codex summarizes those skill rules into a concise handoff brief.
+3. `deepseek_reasonix.py` creates or reuses an Agent Room and posts the Codex
+   orchestrator brief.
+4. Reasonix runs the bulk of the work with mandatory subagents and peer review.
+5. Codex performs the final audit, test pass, and user-facing answer.
+
 ## GPT-5.5
 
 Use GPT-5.5 when the work is high-risk or final:
@@ -45,6 +55,13 @@ Hybrid means:
 3. Codex edits, tests, and verifies before presenting it as final.
 
 This is the default for implementation tasks.
+
+Reasonix body mode is a stronger hybrid variant for larger project turns:
+
+1. Codex plans and constrains.
+2. Reasonix executes with multiple subagents.
+3. Reasonix performs a strict self-review.
+4. Codex still owns the final acceptance decision.
 
 ## Token Accounting
 

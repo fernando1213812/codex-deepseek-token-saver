@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Current version: **v2.2.0**. See [changelog](docs/changelog.md).
+Current version: **v2.3.0**. See [changelog](docs/changelog.md).
 
 Delegate low-risk Codex work to DeepSeek, log DeepSeek token usage, and estimate
 how many Codex tokens were saved. GPT-5.5 stays responsible for review and final
@@ -23,18 +23,19 @@ Codex/GPT-5.5 should still handle final review, safety checks, and correctness
 gates. This repo provides a small standard-library Python CLI plus a Codex skill
 that makes that split explicit.
 
-## What's New In v2.2
+## What's New In v2.3
 
-- Default-on skill activation guidance for most low-risk project-shaped work,
-  including apps, scripts, tests, docs, research summaries, refactor drafts, and
-  batch edits.
-- Clear opt-out and high-risk exclusions: final decisions, secrets/auth,
-  destructive production actions, urgent one-line commands, and explicit
-  Codex-only requests stay with Codex/GPT.
-- New `deepseek_transcript.py` exporter for readable Markdown transcripts from
-  either persistent workers or Agent Rooms.
-- Updated skill UI metadata so Codex can recognize token-saving project work
-  more broadly while still keeping Codex responsible for final verification.
+- Add `deepseek_reasonix.py`, a Codex orchestrator that creates or reuses an
+  Agent Room, posts a Codex brief, scaffolds a Reasonix skill pack, runs a
+  Reasonix execution pass, then runs a strict Reasonix self-review pass before
+  Codex performs final review.
+- Add multi-agent Reasonix body mode with mandatory implementer, tester, and
+  critic subagents plus optional docs subagents for larger project work.
+- Add `--skill-name`, `--skill-brief`, and `--image-brief` handoff fields so
+  Codex can pass triggered-skill guidance and non-multimodal visual context
+  into the cheaper execution loop.
+- Extend transcript export so room events now show Reasonix artifact paths,
+  prompt paths, and transcript paths for easier auditing.
 
 ## Routing Policy
 
@@ -113,12 +114,36 @@ python3 deepseek_room.py review \
 python3 deepseek_room.py writer --room-id calculator-room
 ```
 
+Run the full Codex orchestrator + Reasonix body room flow:
+
+```sh
+python3 deepseek_reasonix.py \
+  --room-id overnight-room \
+  --skill-name deepseek-token-saver \
+  --skill-name diagnose \
+  --skill-brief "Codex already routed this as a low-risk implementation task. DeepSeek/Reasonix should do the bulk of the drafting, but Codex will still test and perform final review." \
+  --image-brief-file work/ui-brief.md \
+  "Create the room, force multi-agent Reasonix execution, and return a Codex-ready candidate."
+```
+
+This flow is designed for "one instruction in, cheap multi-agent execution in
+the room, Codex final review out" while keeping Codex's token share low.
+
 Export the latest readable worker or room transcript:
 
 ```sh
 python3 deepseek_transcript.py \
   --latest \
   --out work/deepseek-transcript.md
+```
+
+Scaffold the Reasonix room without calling the API:
+
+```sh
+python3 deepseek_reasonix.py \
+  --room-id overnight-room \
+  --dry-run \
+  "Create the room and prompts only."
 ```
 
 ## Example Output

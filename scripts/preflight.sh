@@ -7,10 +7,12 @@ cd "$ROOT"
 python3 -m py_compile \
   deepseek_agent.py \
   deepseek_delegate.py \
+  deepseek_reasonix.py \
   deepseek_room.py \
   deepseek_transcript.py \
   skills/deepseek-token-saver/scripts/deepseek_agent.py \
   skills/deepseek-token-saver/scripts/deepseek_delegate.py \
+  skills/deepseek-token-saver/scripts/deepseek_reasonix.py \
   skills/deepseek-token-saver/scripts/deepseek_room.py \
   skills/deepseek-token-saver/scripts/deepseek_transcript.py
 

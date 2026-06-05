@@ -1,12 +1,14 @@
 ---
 name: deepseek-token-saver
-description: Default-on token-saving workflow for most low-risk project work where DeepSeek can draft and Codex/GPT can audit. Use for coding projects, app/site/prototype creation, helper scripts, tests, docs, research summaries, data shaping, refactor drafts, issue breakdowns, examples, batch edits, or any reviewable candidate output. Also use when the user asks to use DeepSeek, save Codex tokens, compare cheap-model drafts, run background candidates, log token savings, or make subagents call DeepSeek. Do not use for final high-stakes decisions, secrets/auth/destructive production actions, urgent one-line commands, or when the user explicitly opts out.
+description: Default-on token-saving workflow for most low-risk project work where DeepSeek or Reasonix can draft and Codex/GPT can audit. Use for coding projects, app/site/prototype creation, helper scripts, tests, docs, research summaries, data shaping, refactor drafts, issue breakdowns, examples, batch edits, or any reviewable candidate output. Also use when the user asks to use DeepSeek, save Codex tokens, compare cheap-model drafts, run background candidates, log token savings, make subagents call DeepSeek, or run a multi-agent Reasonix room. Do not use for final high-stakes decisions, secrets/auth/destructive production actions, urgent one-line commands, or when the user explicitly opts out.
 ---
 
 # DeepSeek Token Saver
 
 Use this skill to route expendable process work to DeepSeek while preserving
-GPT-5.5 as the reviewer and final decision maker.
+GPT-5.5 as the reviewer and final decision maker. When the user wants an
+always-on room, cheap multi-agent execution, or very low Codex token share, use
+Reasonix as the execution body and keep Codex as orchestrator/final reviewer.
 
 ## Auto Trigger Conditions
 
@@ -125,6 +127,29 @@ Efficiency rule:
   explicit writer/reviewer turns, or repeated "打回重做" loops.
 - In both cases, use `deepseek_transcript.py` when the user asks to see the
   conversation or when final reporting would benefit from a readable audit log.
+
+Reasonix body orchestration (preferred when the user wants "one instruction in,
+create a room, let cheap multi-agents do the bulk of the work, then Codex final
+review" or explicitly asks for aggressive token savings):
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_reasonix.py \
+  --room-id overnight-room \
+  --skill-name deepseek-token-saver \
+  --skill-name diagnose \
+  --skill-brief "Codex already routed this as a low-risk implementation task. Reasonix should do the bulk of the process work, but Codex will still test and perform final review." \
+  --image-brief-file work/ui-brief.md \
+  "Create the room, force multi-agent Reasonix execution, and return a Codex-ready candidate."
+```
+
+Scaffold only:
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_reasonix.py \
+  --room-id overnight-room \
+  --dry-run \
+  "Create the room and prompts only."
+```
 
 Agent Room orchestration (preferred when the user asks for multiple agents in
 one channel, cheap writer + expensive reviewer loops, or "打回重做"):
@@ -257,6 +282,38 @@ When the user asks for multiple agents to collaborate in one chat/channel:
 This makes DeepSeek do the bulk of draft output while Codex audits and routes
 the retry loop. Do not pretend the local room is a full Codex UI integration:
 it is a file-backed channel that the parent Codex agent and subagents can share.
+
+## Reasonix Body Mode
+
+Use Reasonix body mode when all are true:
+
+- The user wants a persistent room or asks for multiple cheap agents to work
+  inside one channel.
+- The task is still low/medium risk enough that Codex can review the result
+  after the fact.
+- The user cares about minimizing Codex token usage more than minimizing
+  DeepSeek/Reasonix usage.
+
+Workflow:
+
+1. Codex interprets the request and activates any relevant local skills first.
+2. Codex summarizes those skills into `--skill-name` and `--skill-brief`.
+3. If images matter, Codex inspects them and writes a factual `--image-brief`
+   because DeepSeek v4 pro is not multimodal in this workflow.
+4. `deepseek_reasonix.py` creates or reuses the room, posts the Codex
+   orchestrator brief, and scaffolds a temporary Reasonix skill pack.
+5. Reasonix must use multiple subagents. At minimum: implementer, tester, and
+   critic. Add docs when user-facing text or release notes changed.
+6. The manager tone may be strict and rejection-heavy, but never manipulative
+   or abusive.
+7. Reasonix self-reviews once, then Codex performs the final review, testing,
+   and user-facing answer.
+
+Token-target rule:
+
+- Aim for Codex to spend around 10% of the process tokens on normal project
+  turns by letting Reasonix do the bulk execution and only escalating to Codex
+  for planning, verification, safety, and final judgment.
 
 Default multi-agent roster when the task is large enough:
 

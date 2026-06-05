@@ -21,6 +21,15 @@
 
 不要自动激活的场景包括：用户明确要求不用 DeepSeek、极短直接命令、密钥/auth/生产破坏性改动，以及需要高风险最终判断的任务。
 
+如果用户明确想要“固定聊天室 + 便宜多智能体执行 + Codex 最后收口”，或者非常在意
+压低 Codex token 占比，则优先进入 Reasonix body mode：
+
+1. Codex 先理解需求并触发本地相关 skill。
+2. Codex 把这些 skill 规则压缩成简短 handoff brief。
+3. `deepseek_reasonix.py` 创建或复用 Agent Room，并把 Codex orchestrator brief 写入房间。
+4. Reasonix 用强制多子智能体和同伴监督完成大部分过程工作。
+5. Codex 最后做审计、测试和面向用户的最终回答。
+
 ## GPT-5.5
 
 当任务高风险或处在最终阶段时，用 GPT-5.5：
@@ -39,6 +48,13 @@
 3. Codex 编辑、测试、验证后，才能作为最终结果呈现。
 
 实现类任务默认使用混合模式。
+
+Reasonix body mode 可以看成更强的 hybrid：
+
+1. Codex 负责规划和约束。
+2. Reasonix 用多个子智能体执行。
+3. Reasonix 先自审一轮。
+4. Codex 仍然保留最终接受权。
 
 ## Token 记账
 

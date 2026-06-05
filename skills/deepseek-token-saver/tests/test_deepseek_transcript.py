@@ -78,12 +78,24 @@ class DeepSeekTranscriptTest(unittest.TestCase):
                     "metadata": {"usage": {"total_tokens": 3}},
                 },
             )
+            append_jsonl(
+                root / "events.jsonl",
+                {
+                    "event": "reasonix_execution",
+                    "timestamp": "t3",
+                    "phase": "execution",
+                    "model": "deepseek-v4-pro",
+                    "artifact_path": "/tmp/artifact.md",
+                    "transcript_path": "/tmp/transcript.jsonl",
+                },
+            )
 
             markdown = transcript.render_room(root, max_chars=100, include_full=False)
             self.assertIn("Agent Room Transcript - demo-room", markdown)
             self.assertIn("msg-0001 user human / task", markdown)
             self.assertIn("Build it.", markdown)
             self.assertIn("needs-review", markdown)
+            self.assertIn("/tmp/transcript.jsonl", markdown)
 
     def test_select_single_agent_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
