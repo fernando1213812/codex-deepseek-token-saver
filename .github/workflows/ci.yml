@@ -13,6 +13,15 @@ jobs:
         with:
           python-version: "3.11"
       - name: Compile
-        run: python -m py_compile deepseek_delegate.py skills/deepseek-token-saver/scripts/deepseek_delegate.py
+        run: |
+          python -m py_compile \
+            deepseek_agent.py \
+            deepseek_delegate.py \
+            deepseek_room.py \
+            skills/deepseek-token-saver/scripts/deepseek_agent.py \
+            skills/deepseek-token-saver/scripts/deepseek_delegate.py \
+            skills/deepseek-token-saver/scripts/deepseek_room.py
       - name: Unit tests
-        run: python -m unittest discover -s tests
+        run: |
+          python -m unittest discover -s tests
+          python -m unittest discover -s skills/deepseek-token-saver/tests
