@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-当前版本：**v2.1.0**。参见 [更新日志](docs/changelog.md)。
+当前版本：**v2.2.0**。参见 [更新日志](docs/changelog.md)。
 
 把低风险、非最终阶段的 Codex 工作委托给 DeepSeek，记录 DeepSeek token 用量，并估算节省了多少 Codex token。GPT-5.5 仍然负责审核和最终正确性。
 
@@ -18,13 +18,12 @@ DeepSeek 很适合承担大量上下文和过程型工作，成本很低。但 C
 
 这个仓库提供一个只依赖 Python 标准库的小 CLI，以及一个 Codex skill，把“DeepSeek 负责过程，GPT-5.5 负责最终审核”的边界写清楚。
 
-## v2.1 新增内容
+## v2.2 新增内容
 
-- 持久 DeepSeek worker：稳定 `agent_id`、transcript 日志、Codex 审核后才进入的 durable memory、reflection 和质量门。
-- Agent Room 编排：便宜 DeepSeek writer 和高级 Codex/GPT reviewer 进入同一个本地文件频道。
-- `needs-rework` 打回重做：reviewer 反馈会写入房间，并注入下一轮 DeepSeek writer prompt。
-- 高级规划先行：高级 Codex/GPT agent 先做架构、任务边界、验收标准和审查 rubric，再分派给细粒度 worker。
-- 更强诊断：`finish_reason`、隐藏 reasoning 字符数、retry 元数据、结构检查和最小正文长度检查。
+- 为大部分低风险项目型任务增加默认激活规则，例如小 app、脚本、测试、文档、研究总结、重构草稿和批量编辑。
+- 明确不自动触发的场景：最终决策、密钥/auth、生产破坏性操作、紧急单行命令，以及用户明确要求 Codex-only。
+- 新增 `deepseek_transcript.py`，可把 persistent worker 或 Agent Room 的记录导出成可读 Markdown。
+- 更新 skill UI metadata，让 Codex 更容易识别“可以省 token 的项目型工作”，同时仍由 Codex 负责最终验证。
 
 ## 路由策略
 
@@ -101,6 +100,14 @@ python3 deepseek_room.py review \
   --feedback "Rejected: add keyboard handling and tests."
 
 python3 deepseek_room.py writer --room-id calculator-room
+```
+
+导出最新 worker 或 room 的可读聊天记录：
+
+```sh
+python3 deepseek_transcript.py \
+  --latest \
+  --out work/deepseek-transcript.md
 ```
 
 ## 输出示例

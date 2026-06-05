@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Current version: **v2.1.0**. See [changelog](docs/changelog.md).
+Current version: **v2.2.0**. See [changelog](docs/changelog.md).
 
 Delegate low-risk Codex work to DeepSeek, log DeepSeek token usage, and estimate
 how many Codex tokens were saved. GPT-5.5 stays responsible for review and final
@@ -23,19 +23,18 @@ Codex/GPT-5.5 should still handle final review, safety checks, and correctness
 gates. This repo provides a small standard-library Python CLI plus a Codex skill
 that makes that split explicit.
 
-## What's New In v2.1
+## What's New In v2.2
 
-- Persistent DeepSeek worker agents with stable `agent_id`, transcript logs,
-  durable Codex-reviewed memory, reflections, and quality gates.
-- Agent Room orchestration for cheap DeepSeek writer agents and senior Codex/GPT
-  reviewers in one shared file-backed channel.
-- `needs-rework` loops: reviewer feedback is recorded into the room and injected
-  into the next DeepSeek writer prompt.
-- Planning-first multi-agent workflow: the senior Codex/GPT agent plans
-  architecture, task boundaries, acceptance criteria, and review rubric before
-  assigning narrow worker agents.
-- Stronger diagnostics: `finish_reason`, hidden reasoning character counts,
-  retry metadata, shape checks, and minimum response gates.
+- Default-on skill activation guidance for most low-risk project-shaped work,
+  including apps, scripts, tests, docs, research summaries, refactor drafts, and
+  batch edits.
+- Clear opt-out and high-risk exclusions: final decisions, secrets/auth,
+  destructive production actions, urgent one-line commands, and explicit
+  Codex-only requests stay with Codex/GPT.
+- New `deepseek_transcript.py` exporter for readable Markdown transcripts from
+  either persistent workers or Agent Rooms.
+- Updated skill UI metadata so Codex can recognize token-saving project work
+  more broadly while still keeping Codex responsible for final verification.
 
 ## Routing Policy
 
@@ -112,6 +111,14 @@ python3 deepseek_room.py review \
   --feedback "Rejected: add keyboard handling and tests."
 
 python3 deepseek_room.py writer --room-id calculator-room
+```
+
+Export the latest readable worker or room transcript:
+
+```sh
+python3 deepseek_transcript.py \
+  --latest \
+  --out work/deepseek-transcript.md
 ```
 
 ## Example Output

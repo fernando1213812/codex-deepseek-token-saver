@@ -1,12 +1,39 @@
 ---
 name: deepseek-token-saver
-description: Delegates low-risk, non-urgent Codex work to DeepSeek to save Codex tokens while keeping GPT-5.5 responsible for review and final correctness. Use when the user asks to use DeepSeek, save Codex tokens, compare cheap-model drafts, run background candidate generation, log token savings, or make subagents call DeepSeek for draft/research/batch work.
+description: Default-on token-saving workflow for most low-risk project work where DeepSeek can draft and Codex/GPT can audit. Use for coding projects, app/site/prototype creation, helper scripts, tests, docs, research summaries, data shaping, refactor drafts, issue breakdowns, examples, batch edits, or any reviewable candidate output. Also use when the user asks to use DeepSeek, save Codex tokens, compare cheap-model drafts, run background candidates, log token savings, or make subagents call DeepSeek. Do not use for final high-stakes decisions, secrets/auth/destructive production actions, urgent one-line commands, or when the user explicitly opts out.
 ---
 
 # DeepSeek Token Saver
 
 Use this skill to route expendable process work to DeepSeek while preserving
 GPT-5.5 as the reviewer and final decision maker.
+
+## Auto Trigger Conditions
+
+Default to activating this skill for most project-shaped work when all are true:
+
+- The task will create, modify, draft, analyze, or organize a nontrivial artifact.
+- A cheaper model can produce a candidate that Codex can inspect, test, edit, or reject.
+- The work is low or medium risk, non-destructive, and not a final authority decision.
+
+Common auto-trigger examples:
+
+- Build or modify a small app, website, prototype, CLI, script, test suite, or document.
+- Draft boilerplate, candidate implementation, fixtures, examples, README, changelog, PRD,
+  issue list, refactor plan, migration sketch, or research summary.
+- Batch summarize, classify, translate, rewrite, extract, compare, or reshape data/content.
+- Explore alternatives before Codex chooses, verifies, and finalizes one.
+
+Do not auto-trigger when:
+
+- The user explicitly says not to use DeepSeek, not to save tokens, or asks for Codex-only work.
+- The request is a tiny direct answer or command where delegation overhead costs more than it saves.
+- The task involves credentials, auth, secrets, payment, destructive filesystem/git actions,
+  production deploy/release, legal/medical/financial advice, or other high-stakes final judgment.
+- The task is urgent and waiting for DeepSeek would make the user experience worse.
+
+Activation does not mean DeepSeek must always be called. First classify route and risk; for
+tiny or high-risk turns, record the route as GPT/Codex and proceed without delegation.
 
 ## Routing Rule
 
@@ -65,6 +92,39 @@ List persistent DeepSeek workers:
 ```sh
 python3 skills/deepseek-token-saver/scripts/deepseek_agent.py --list-agents
 ```
+
+Export a readable transcript for the latest room or worker:
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_transcript.py \
+  --latest \
+  --out work/deepseek-transcript.md
+```
+
+Export a specific persistent worker transcript:
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_transcript.py \
+  --agent-id codex-deepseek-worker \
+  --out work/deepseek-worker-transcript.md
+```
+
+Export a specific Agent Room transcript:
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_transcript.py \
+  --room-id calculator-room \
+  --out work/deepseek-room-transcript.md
+```
+
+Efficiency rule:
+
+- Prefer a persistent DeepSeek worker for one bounded writer task, memory,
+  reflection, or a simple "DeepSeek drafts / Codex reviews" loop.
+- Prefer Agent Room only when the user wants multiple agents in one channel,
+  explicit writer/reviewer turns, or repeated "打回重做" loops.
+- In both cases, use `deepseek_transcript.py` when the user asks to see the
+  conversation or when final reporting would benefit from a readable audit log.
 
 Agent Room orchestration (preferred when the user asks for multiple agents in
 one channel, cheap writer + expensive reviewer loops, or "打回重做"):

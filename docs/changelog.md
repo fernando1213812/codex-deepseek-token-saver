@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.2.0 - 2026-06-06
+
+Default activation and transcript export update.
+
+- Make the Codex skill default-on for most low-risk project-shaped work where
+  DeepSeek can draft a reviewable candidate and Codex/GPT can audit it.
+- Add explicit non-trigger conditions for Codex-only requests, tiny direct
+  commands, credentials/auth/secrets, destructive production work, high-stakes
+  final judgment, and urgent turns.
+- Add `deepseek_transcript.py`, a standard-library Markdown exporter for
+  persistent worker transcripts and Agent Room message logs.
+- Add transcript exporter tests and include the new script in preflight
+  compilation.
+- Update skill `agents/openai.yaml` metadata to reflect broader project-level
+  auto-triggering and transcript export.
+
 ## v2.1.0 - 2026-06-05
 
 Major orchestration update. This release keeps the original one-shot DeepSeek

@@ -8,9 +8,11 @@ python3 -m py_compile \
   deepseek_agent.py \
   deepseek_delegate.py \
   deepseek_room.py \
+  deepseek_transcript.py \
   skills/deepseek-token-saver/scripts/deepseek_agent.py \
   skills/deepseek-token-saver/scripts/deepseek_delegate.py \
-  skills/deepseek-token-saver/scripts/deepseek_room.py
+  skills/deepseek-token-saver/scripts/deepseek_room.py \
+  skills/deepseek-token-saver/scripts/deepseek_transcript.py
 
 python3 -m unittest discover -s tests
 python3 -m unittest discover -s skills/deepseek-token-saver/tests

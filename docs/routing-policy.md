@@ -15,6 +15,18 @@ Use DeepSeek when the work is low-risk, non-final, and easy to review:
 - Batch transformations.
 - Slow background work where latency is acceptable.
 
+## Default Skill Activation
+
+For Codex skill routing, activate `deepseek-token-saver` by default for most
+project-shaped work when DeepSeek can produce a candidate and Codex can inspect,
+test, edit, or reject it. This includes small apps, websites, prototypes,
+helper scripts, tests, docs, research summaries, issue breakdowns, refactor
+drafts, examples, and batch edits.
+
+Do not auto-activate when the user explicitly opts out, the request is a tiny
+direct command, the work involves secrets/auth/destructive production changes,
+or the turn requires high-stakes final judgment.
+
 ## GPT-5.5
 
 Use GPT-5.5 when the work is high-risk or final:
