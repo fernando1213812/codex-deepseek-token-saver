@@ -5,10 +5,15 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 python3 -m py_compile \
+  deepseek_agent.py \
   deepseek_delegate.py \
-  skills/deepseek-token-saver/scripts/deepseek_delegate.py
+  deepseek_room.py \
+  skills/deepseek-token-saver/scripts/deepseek_agent.py \
+  skills/deepseek-token-saver/scripts/deepseek_delegate.py \
+  skills/deepseek-token-saver/scripts/deepseek_room.py
 
 python3 -m unittest discover -s tests
+python3 -m unittest discover -s skills/deepseek-token-saver/tests
 
 python3 deepseek_delegate.py \
   --route-only \

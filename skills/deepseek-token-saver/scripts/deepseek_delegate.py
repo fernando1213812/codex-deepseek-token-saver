@@ -11,28 +11,33 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import datetime as dt
+import email.utils
 import hashlib
 import json
 import math
 import os
 from pathlib import Path
+import random
 import re
 import ssl
 import subprocess
 import sys
-import textwrap
+import time
 import urllib.error
 import urllib.request
 from typing import Any
 
 
 API_URL = "https://api.deepseek.com/chat/completions"
-DEFAULT_MODEL = "deepseek-v4-pro"
+DEFAULT_MODEL = "deepseek-chat"
 DEFAULT_KEYCHAIN_SERVICE = "codex-deepseek-api-key"
+RETRYABLE_HTTP_STATUS = {408, 409, 429}
 DEFAULT_SYSTEM = (
     "You are assisting Codex by producing candidate material for a low-risk "
     "drafting or exploration phase. Be concise, concrete, and easy to review. "
-    "Do not claim final authority; Codex will audit your output."
+    "When asked to implement code, produce complete candidate source files "
+    "instead of only an outline. Do not claim final authority; Codex will audit "
+    "your output."
 )
 FINAL_REVIEW_TERMS = {
     "audit",
@@ -102,8 +107,38 @@ def parse_args() -> argparse.Namespace:
         help="DeepSeek is preferred for non-urgent work; urgent final work stays with GPT-5.5.",
     )
     parser.add_argument("--max-tokens", type=int, default=1800)
+    parser.add_argument(
+        "--min-response-chars",
+        type=int,
+        default=int(os.environ.get("DEEPSEEK_MIN_RESPONSE_CHARS", "0")),
+        help="Fail the call when the assistant response is shorter than this.",
+    )
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--timeout", type=float, default=120)
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=int(os.environ.get("DEEPSEEK_MAX_RETRIES", "2")),
+        help="Retry transient HTTP/network failures this many times.",
+    )
+    parser.add_argument(
+        "--retry-initial-delay",
+        type=float,
+        default=float(os.environ.get("DEEPSEEK_RETRY_INITIAL_DELAY", "0.5")),
+        help="Initial exponential-backoff delay in seconds.",
+    )
+    parser.add_argument(
+        "--retry-max-delay",
+        type=float,
+        default=float(os.environ.get("DEEPSEEK_RETRY_MAX_DELAY", "8")),
+        help="Maximum exponential-backoff delay in seconds.",
+    )
+    parser.add_argument(
+        "--thinking",
+        choices=("auto", "enabled"),
+        default=os.environ.get("DEEPSEEK_THINKING", "auto"),
+        help="Send DeepSeek thinking mode only when explicitly enabled.",
+    )
     parser.add_argument("--out", help="Write assistant text to this file.")
     parser.add_argument(
         "--log-file",
@@ -125,6 +160,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--json", action="store_true", help="Print a JSON result envelope.")
     parser.add_argument("--raw", action="store_true", help="Include sanitized raw API JSON.")
+    parser.add_argument("--verbose", action="store_true", help="Print retry diagnostics to stderr.")
     parser.add_argument("--no-keychain", action="store_true")
     parser.add_argument(
         "--savings-ratio",
@@ -242,6 +278,40 @@ def estimate_tokens(text: str) -> int:
     return max(1, math.ceil(cjk * 1.2 + non_cjk / 4))
 
 
+def parse_retry_after(headers: Any) -> float | None:
+    if not headers:
+        return None
+    retry_after_ms = headers.get("retry-after-ms") if hasattr(headers, "get") else None
+    try:
+        return float(retry_after_ms) / 1000
+    except (TypeError, ValueError):
+        pass
+
+    retry_after = headers.get("retry-after") if hasattr(headers, "get") else None
+    try:
+        return float(retry_after)
+    except (TypeError, ValueError):
+        pass
+
+    retry_date_tuple = email.utils.parsedate_tz(retry_after)
+    if retry_date_tuple is None:
+        return None
+    return float(email.utils.mktime_tz(retry_date_tuple) - time.time())
+
+
+def calculate_retry_delay(args: argparse.Namespace, attempt: int, headers: Any = None) -> float:
+    retry_after = parse_retry_after(headers)
+    if retry_after is not None and 0 < retry_after <= 60:
+        return retry_after
+    capped_attempt = min(attempt, 12)
+    base = min(args.retry_initial_delay * pow(2.0, capped_attempt), args.retry_max_delay)
+    return max(0.0, base * (1 - 0.25 * random.random()))
+
+
+def should_retry_http(status_code: int) -> bool:
+    return status_code in RETRYABLE_HTTP_STATUS or status_code >= 500
+
+
 def call_deepseek(args: argparse.Namespace, prompt: str) -> dict[str, Any]:
     api_key = read_api_key(args)
     if not api_key:
@@ -250,7 +320,7 @@ def call_deepseek(args: argparse.Namespace, prompt: str) -> dict[str, Any]:
             f"macOS Keychain service {DEFAULT_KEYCHAIN_SERVICE!r}."
         )
 
-    payload = {
+    payload: dict[str, Any] = {
         "model": args.model,
         "messages": [
             {"role": "system", "content": args.system},
@@ -259,33 +329,71 @@ def call_deepseek(args: argparse.Namespace, prompt: str) -> dict[str, Any]:
         "max_tokens": args.max_tokens,
         "temperature": args.temperature,
     }
-    request = urllib.request.Request(
-        API_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    if args.thinking == "enabled":
+        payload["thinking"] = {"type": "enabled"}
 
-    try:
-        with urllib.request.urlopen(
-            request,
-            timeout=args.timeout,
-            context=build_ssl_context(),
-        ) as response:
-            body = response.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        detail = redact_secrets(exc.read().decode("utf-8", errors="replace"))
-        raise RuntimeError(f"DeepSeek API returned HTTP {exc.code}: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Could not reach DeepSeek API: {exc.reason}") from exc
+    max_retries = max(0, args.max_retries)
+    context = build_ssl_context()
+    last_error: str | None = None
+    for attempt in range(max_retries + 1):
+        request = urllib.request.Request(
+            API_URL,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=args.timeout,
+                context=context,
+            ) as response:
+                body = response.read().decode("utf-8")
+                status = getattr(response, "status", 200)
+                headers = response.headers
+        except urllib.error.HTTPError as exc:
+            detail = redact_secrets(exc.read().decode("utf-8", errors="replace"))
+            last_error = f"DeepSeek API returned HTTP {exc.code}: {detail}"
+            if attempt < max_retries and should_retry_http(exc.code):
+                delay = calculate_retry_delay(args, attempt, exc.headers)
+                if args.verbose:
+                    print(
+                        f"Retrying DeepSeek HTTP {exc.code} in {delay:.2f}s "
+                        f"({attempt + 1}/{max_retries})",
+                        file=sys.stderr,
+                    )
+                time.sleep(delay)
+                continue
+            raise RuntimeError(last_error) from exc
+        except urllib.error.URLError as exc:
+            last_error = f"Could not reach DeepSeek API: {exc.reason}"
+            if attempt < max_retries:
+                delay = calculate_retry_delay(args, attempt)
+                if args.verbose:
+                    print(
+                        f"Retrying DeepSeek network error in {delay:.2f}s "
+                        f"({attempt + 1}/{max_retries})",
+                        file=sys.stderr,
+                    )
+                time.sleep(delay)
+                continue
+            raise RuntimeError(last_error) from exc
 
-    try:
-        return json.loads(body)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("DeepSeek response was not valid JSON: " + redact_secrets(body[:800])) from exc
+        try:
+            result = json.loads(body)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError("DeepSeek response was not valid JSON: " + redact_secrets(body[:800])) from exc
+        result["_codex_request"] = {
+            "attempts": attempt + 1,
+            "status": status,
+            "thinking": args.thinking,
+        }
+        return result
+
+    raise RuntimeError(last_error or "DeepSeek request failed.")
 
 
 def extract_message(result: dict[str, Any]) -> str:
@@ -299,6 +407,33 @@ def extract_message(result: dict[str, Any]) -> str:
     if isinstance(content, str):
         return content.strip()
     return ""
+
+
+def extract_finish_reason(result: dict[str, Any]) -> str | None:
+    choices = result.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return None
+    choice = choices[0]
+    if not isinstance(choice, dict):
+        return None
+    reason = choice.get("finish_reason")
+    return reason if isinstance(reason, str) else None
+
+
+def extract_reasoning_chars(result: dict[str, Any]) -> int:
+    choices = result.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return 0
+    message = choices[0].get("message") if isinstance(choices[0], dict) else None
+    if not isinstance(message, dict):
+        return 0
+    reasoning = message.get("reasoning_content")
+    return len(reasoning) if isinstance(reasoning, str) else 0
+
+
+def request_meta(result: dict[str, Any]) -> dict[str, Any]:
+    meta = result.get("_codex_request")
+    return meta if isinstance(meta, dict) else {}
 
 
 def usage_summary(result: dict[str, Any], prompt: str, response_text: str) -> dict[str, int]:
@@ -330,6 +465,12 @@ def log_call(
     decision: RouteDecision,
     response_text: str,
     usage: dict[str, int],
+    finish_reason: str | None,
+    reasoning_chars: int,
+    request_metadata: dict[str, Any],
+    quality_status: str = "unchecked",
+    quality_issues: list[str] | None = None,
+    output_written: bool = False,
 ) -> dict[str, Any]:
     saved = max(0, round(usage["total_tokens"] * max(0.0, args.savings_ratio)))
     entry = {
@@ -344,6 +485,14 @@ def log_call(
         "prompt_hash": hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16],
         "prompt_chars": len(prompt),
         "response_chars": len(response_text),
+        "finish_reason": finish_reason,
+        "reasoning_chars": reasoning_chars,
+        "quality_gate": {
+            "status": quality_status,
+            "issues": quality_issues or [],
+        },
+        "output_written": output_written,
+        "request": request_metadata,
         "usage": usage,
         "estimated_codex_tokens_saved": saved,
         "savings_ratio": args.savings_ratio,
@@ -411,18 +560,50 @@ def main() -> int:
             print(redact_secrets(json.dumps(result, ensure_ascii=False, indent=2)))
         return 3
 
+    usage = usage_summary(result, prompt, response_text)
+    finish_reason = extract_finish_reason(result)
+    reasoning_chars = extract_reasoning_chars(result)
+    request_metadata = request_meta(result)
+    if args.min_response_chars and len(response_text) < args.min_response_chars:
+        entry = log_call(
+            args=args,
+            prompt=prompt,
+            decision=decision,
+            response_text=response_text,
+            usage=usage,
+            finish_reason=finish_reason,
+            reasoning_chars=reasoning_chars,
+            request_metadata=request_metadata,
+            quality_status="fail",
+            quality_issues=[f"response_too_short:{len(response_text)}<{args.min_response_chars}"],
+            output_written=False,
+        )
+        print(
+            "DeepSeek response failed quality gate: "
+            f"{len(response_text)} chars < {args.min_response_chars} required "
+            f"(finish_reason={finish_reason}, reasoning_chars={reasoning_chars}).",
+            file=sys.stderr,
+        )
+        if args.raw:
+            print(redact_secrets(json.dumps(result, ensure_ascii=False, indent=2)))
+        return 4
+
     if args.out:
         out_path = Path(args.out)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(response_text, encoding="utf-8")
 
-    usage = usage_summary(result, prompt, response_text)
     entry = log_call(
         args=args,
         prompt=prompt,
         decision=decision,
         response_text=response_text,
         usage=usage,
+        finish_reason=finish_reason,
+        reasoning_chars=reasoning_chars,
+        request_metadata=request_metadata,
+        quality_status="pass",
+        output_written=bool(args.out),
     )
 
     envelope: dict[str, Any] = {
@@ -431,6 +612,9 @@ def main() -> int:
         "usage": usage,
         "estimated_codex_tokens_saved": entry["estimated_codex_tokens_saved"],
         "log_file": args.log_file,
+        "finish_reason": finish_reason,
+        "reasoning_chars": reasoning_chars,
+        "request": request_metadata,
         "response": response_text,
     }
     if args.raw:

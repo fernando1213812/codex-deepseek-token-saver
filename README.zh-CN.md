@@ -6,6 +6,8 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
+当前版本：**v2.1.0**。参见 [更新日志](docs/changelog.md)。
+
 把低风险、非最终阶段的 Codex 工作委托给 DeepSeek，记录 DeepSeek token 用量，并估算节省了多少 Codex token。GPT-5.5 仍然负责审核和最终正确性。
 
 这个项目适合希望用便宜长上下文模型承担草稿、批处理和探索工作的 agent，同时避免让这些草稿模型做最终决策。
@@ -15,6 +17,14 @@
 DeepSeek 很适合承担大量上下文和过程型工作，成本很低。但 Codex/GPT-5.5 仍然应该负责最终审查、安全检查和正确性把关。
 
 这个仓库提供一个只依赖 Python 标准库的小 CLI，以及一个 Codex skill，把“DeepSeek 负责过程，GPT-5.5 负责最终审核”的边界写清楚。
+
+## v2.1 新增内容
+
+- 持久 DeepSeek worker：稳定 `agent_id`、transcript 日志、Codex 审核后才进入的 durable memory、reflection 和质量门。
+- Agent Room 编排：便宜 DeepSeek writer 和高级 Codex/GPT reviewer 进入同一个本地文件频道。
+- `needs-rework` 打回重做：reviewer 反馈会写入房间，并注入下一轮 DeepSeek writer prompt。
+- 高级规划先行：高级 Codex/GPT agent 先做架构、任务边界、验收标准和审查 rubric，再分派给细粒度 worker。
+- 更强诊断：`finish_reason`、隐藏 reasoning 字符数、retry 元数据、结构检查和最小正文长度检查。
 
 ## 路由策略
 
@@ -61,6 +71,38 @@ python3 deepseek_delegate.py --route-only --phase final "Review this release pla
 
 CLI 默认把 JSONL 日志写入 `.deepseek-token-saver/calls.jsonl`。
 
+运行持久 DeepSeek worker：
+
+```sh
+python3 deepseek_agent.py \
+  --agent-id codex-deepseek-worker \
+  --phase implement \
+  --workflow-id calculator \
+  --task-id draft-main-code \
+  --min-response-chars 2000 \
+  --out work/deepseek-draft.py \
+  "Draft a bounded candidate implementation for Codex review."
+```
+
+运行 Agent Room 写作/审查/打回循环：
+
+```sh
+python3 deepseek_room.py init --room-id calculator-room
+
+python3 deepseek_room.py writer \
+  --room-id calculator-room \
+  --writer-id codex-deepseek-room-writer \
+  --reviewer-id codex-gpt-5.5-reviewer \
+  --prompt "Build the candidate implementation."
+
+python3 deepseek_room.py review \
+  --room-id calculator-room \
+  --status needs-rework \
+  --feedback "Rejected: add keyboard handling and tests."
+
+python3 deepseek_room.py writer --room-id calculator-room
+```
+
 ## 输出示例
 
 ```text
@@ -89,6 +131,7 @@ sh scripts/install_skill.sh
 - 任何暴露过的 API key 都应立即撤销。
 - DeepSeek 输出只作为草稿材料。
 - GPT-5.5 必须审核最终代码、最终回答和公开发布步骤。
+- DeepSeek durable memory 只能写入 Codex 审核过的经验，不能写入原始密钥、隐私上下文或未经验证的 transcript。
 
 ## 开发
 
