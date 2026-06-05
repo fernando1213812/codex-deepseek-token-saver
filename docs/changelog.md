@@ -1,5 +1,22 @@
 # Changelog
 
+## v2.4.0 - 2026-06-06
+
+Visual room console and desktop shell update.
+
+- Add `deepseek_room_server.py`, a live SSE-backed room dashboard for browsing
+  room history, message timelines, jobs, events, transcripts, and artifacts.
+- Add a chat-client UI inspired by QQ/WeChat with searchable room history on
+  the left, realtime room conversation in the center, and room inspection on
+  the right.
+- Add `deepseek_room_desktop.py`, a native pywebview-based Mac desktop shell
+  that remembers the selected workspace and can fall back to the system
+  browser.
+- Add `scripts/build_mac_app.sh` and `scripts/generate_room_console_icon.py`
+  so the visual room console can be packaged as a Mac `.app`.
+- Add desktop-shell tests, update preflight compilation/syntax checks, and
+  validate the frozen app by launching its embedded room server.
+
 ## v2.3.0 - 2026-06-06
 
 Reasonix body orchestration update.

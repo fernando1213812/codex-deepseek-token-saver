@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""Convenience wrapper for the visual Agent Room dashboard server."""
+
+from __future__ import annotations
+
+from pathlib import Path
+import runpy
+
+
+SCRIPT = Path(__file__).parent / "skills" / "deepseek-token-saver" / "scripts" / "deepseek_room_server.py"
+
+
+if __name__ == "__main__":
+    runpy.run_path(str(SCRIPT), run_name="__main__")

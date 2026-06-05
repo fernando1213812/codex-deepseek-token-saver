@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reasonix Room Console</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand-strip">
+          <div class="brand-lockup">
+            <div class="brand-mark">
+              <img src="/assets/icon.svg" alt="Reasonix Room Console" />
+            </div>
+            <div>
+              <p class="eyebrow">DeepSeek Rooms</p>
+              <h1>Reasonix Console</h1>
+            </div>
+          </div>
+          <button class="icon-button" id="newRoomButton" type="button" aria-label="Create a new room">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+
+        <label class="search-shell" aria-label="Search rooms">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+          <input id="roomFilterInput" type="search" placeholder="Search rooms, prompts, notes" />
+        </label>
+
+        <section class="sidebar-section guide-section">
+          <div class="guide-avatar">
+            <img src="/assets/icon.svg" alt="" />
+          </div>
+          <div class="guide-copy">
+            <p class="guide-kicker">Room Captain</p>
+            <h2>Night Shift Chat</h2>
+            <p>Cheap multi-agent drafting, visible supervision, and a calmer review lane.</p>
+          </div>
+        </section>
+
+        <section class="sidebar-section rooms-section">
+          <div class="section-header">
+            <h2>Room History</h2>
+            <button class="ghost-button" id="refreshRoomsButton" type="button">Refresh</button>
+          </div>
+          <div class="meta-row">
+            <span id="roomCountLabel">0 rooms</span>
+            <span id="workspaceLabel">Workspace</span>
+          </div>
+          <div class="rooms-list" id="roomsList"></div>
+        </section>
+      </aside>
+
+      <main class="main-stage">
+        <header class="stage-header">
+          <div class="room-heading">
+            <div class="room-hero-avatar" id="roomHeroAvatar">RC</div>
+            <div>
+              <div class="header-topline">
+                <span class="live-dot"></span>
+                <span class="header-label" id="connectionLabel">Realtime Room Feed</span>
+              </div>
+              <h2 id="roomTitle">Select or start a room</h2>
+              <p id="roomSubtitle">Waiting for the next room to wake up.</p>
+            </div>
+          </div>
+          <div class="stage-actions">
+            <span class="status-pill info" id="streamPill">live</span>
+            <span class="status-pill neutral" id="roomStatusPill">idle</span>
+            <button class="ghost-button" id="refreshRoomButton" type="button">Sync Now</button>
+          </div>
+        </header>
+
+        <section class="timeline-section">
+          <div class="quick-strip" id="quickFactsStrip"></div>
+          <div class="timeline-scroll" id="messagesPane"></div>
+        </section>
+
+        <section class="composer-section">
+          <div class="composer-header">
+            <h2>Room Actions</h2>
+            <div class="mode-toggle" role="tablist" aria-label="Composer mode">
+              <button class="mode-chip active" data-mode="run" type="button">Run</button>
+              <button class="mode-chip" data-mode="review" type="button">Review</button>
+              <button class="mode-chip" data-mode="post" type="button">Post</button>
+            </div>
+          </div>
+
+          <form class="composer-grid" id="runForm">
+            <label class="field wide">
+              <span>Task Prompt</span>
+              <textarea id="runPrompt" rows="5" placeholder="Tell Codex what the room should do."></textarea>
+            </label>
+            <label class="field">
+              <span>Room Title</span>
+              <input id="runTitle" type="text" placeholder="Overnight UI room" />
+            </label>
+            <label class="field">
+              <span>Reasonix Model</span>
+              <input id="runReasonixModel" type="text" value="deepseek-v4-pro" />
+            </label>
+            <label class="field">
+              <span>Subagent Model</span>
+              <select id="runSubagentModel">
+                <option value="pro">pro</option>
+                <option value="flash">flash</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Effort</span>
+              <select id="runEffort">
+                <option value="high">high</option>
+                <option value="medium">medium</option>
+                <option value="max">max</option>
+                <option value="low">low</option>
+              </select>
+            </label>
+            <label class="field wide">
+              <span>Triggered Skills</span>
+              <input id="runSkillNames" type="text" value="deepseek-token-saver" placeholder="Comma-separated skill names" />
+            </label>
+            <label class="field wide">
+              <span>Skill Brief</span>
+              <textarea id="runSkillBrief" rows="3" placeholder="Codex's short summary of the active skill guidance."></textarea>
+            </label>
+            <label class="field wide">
+              <span>Image Brief</span>
+              <textarea id="runImageBrief" rows="3" placeholder="Describe visual references here for non-multimodal DeepSeek/Reasonix."></textarea>
+            </label>
+            <label class="toggle-field">
+              <input id="runSkipReview" type="checkbox" />
+              <span>Skip the Reasonix self-review pass</span>
+            </label>
+            <div class="actions-row">
+              <button class="primary-button" id="runSubmitButton" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 14-7-4 7 4 7-14-7Z"/></svg>
+                <span>Launch Room Run</span>
+              </button>
+              <span class="inline-hint" id="runHint">Creates a room if none is selected.</span>
+            </div>
+          </form>
+
+          <form class="composer-grid hidden" id="reviewForm">
+            <label class="field">
+              <span>Status</span>
+              <select id="reviewStatus">
+                <option value="needs-rework">needs-rework</option>
+                <option value="accepted">accepted</option>
+                <option value="rejected">rejected</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Reviewer ID</span>
+              <input id="reviewerId" type="text" value="human-reviewer" />
+            </label>
+            <label class="field wide">
+              <span>Feedback</span>
+              <textarea id="reviewFeedback" rows="5" placeholder="Record the Codex or human review note here."></textarea>
+            </label>
+            <div class="actions-row">
+              <button class="primary-button" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span>Record Review</span>
+              </button>
+            </div>
+          </form>
+
+          <form class="composer-grid hidden" id="postForm">
+            <label class="field">
+              <span>Role</span>
+              <select id="postRole">
+                <option value="user">user</option>
+                <option value="system">system</option>
+                <option value="writer">writer</option>
+                <option value="reviewer">reviewer</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Agent ID</span>
+              <input id="postAgentId" type="text" value="manual-user" />
+            </label>
+            <label class="field">
+              <span>Message Type</span>
+              <input id="postMessageType" type="text" value="note" />
+            </label>
+            <label class="field wide">
+              <span>Content</span>
+              <textarea id="postContent" rows="5" placeholder="Add a manual room note or instruction."></textarea>
+            </label>
+            <div class="actions-row">
+              <button class="primary-button" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h16M12 4v16"/></svg>
+                <span>Post Message</span>
+              </button>
+            </div>
+          </form>
+        </section>
+      </main>
+
+      <aside class="inspector">
+        <section class="inspector-section">
+          <div class="section-header">
+            <h2>Room Details</h2>
+          </div>
+          <dl class="fact-grid" id="stateFacts"></dl>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-header">
+            <h2>Jobs</h2>
+          </div>
+          <div class="jobs-list" id="jobsList"></div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-header">
+            <h2>Events</h2>
+          </div>
+          <div class="events-list" id="eventsList"></div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-header">
+            <h2>Live Transcripts</h2>
+          </div>
+          <div class="transcripts-list" id="transcriptsList"></div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-header">
+            <h2>Artifacts</h2>
+          </div>
+          <div class="artifacts-list" id="artifactsList"></div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="toast hidden" id="toast"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

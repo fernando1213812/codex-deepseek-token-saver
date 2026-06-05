@@ -30,6 +30,12 @@
 4. Reasonix 用强制多子智能体和同伴监督完成大部分过程工作。
 5. Codex 最后做审计、测试和面向用户的最终回答。
 
+如果用户希望实时看 room、回看历史 room，或者像聊天客户端一样操作这套系统，则优先使用可视化 room 控制台：
+
+1. 浏览器版用 `deepseek_room_server.py`，原生 Mac 桌面版用 `deepseek_room_desktop.py`。
+2. room 历史继续保存在 workspace 内的 `.deepseek-token-saver/rooms`。
+3. 把 Codex brief、Reasonix 执行、自审，以及最终 Codex 审核都展示成房间里的独立消息和事件。
+
 ## GPT-5.5
 
 当任务高风险或处在最终阶段时，用 GPT-5.5：

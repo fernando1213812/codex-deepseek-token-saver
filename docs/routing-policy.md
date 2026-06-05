@@ -37,6 +37,15 @@ or aggressive Codex token reduction, prefer Reasonix body mode:
 4. Reasonix runs the bulk of the work with mandatory subagents and peer review.
 5. Codex performs the final audit, test pass, and user-facing answer.
 
+When the user wants to watch that room in real time, inspect prior rooms, or
+operate the system like a chat client, prefer the visual room console:
+
+1. Start `deepseek_room_server.py` for the browser console or
+   `deepseek_room_desktop.py` for the native Mac shell.
+2. Keep room history in `.deepseek-token-saver/rooms` inside the workspace.
+3. Surface the Codex brief, Reasonix execution, self-review, and final Codex
+   review as separate messages and events in the room feed.
+
 ## GPT-5.5
 
 Use GPT-5.5 when the work is high-risk or final:

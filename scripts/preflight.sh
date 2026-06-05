@@ -7,17 +7,26 @@ cd "$ROOT"
 python3 -m py_compile \
   deepseek_agent.py \
   deepseek_delegate.py \
+  deepseek_room_desktop.py \
   deepseek_reasonix.py \
   deepseek_room.py \
+  deepseek_room_server.py \
   deepseek_transcript.py \
+  scripts/generate_room_console_icon.py \
   skills/deepseek-token-saver/scripts/deepseek_agent.py \
   skills/deepseek-token-saver/scripts/deepseek_delegate.py \
+  skills/deepseek-token-saver/scripts/deepseek_room_desktop.py \
   skills/deepseek-token-saver/scripts/deepseek_reasonix.py \
   skills/deepseek-token-saver/scripts/deepseek_room.py \
+  skills/deepseek-token-saver/scripts/deepseek_room_server.py \
   skills/deepseek-token-saver/scripts/deepseek_transcript.py
 
 python3 -m unittest discover -s tests
 python3 -m unittest discover -s skills/deepseek-token-saver/tests
+
+if command -v node >/dev/null 2>&1; then
+  node --check dashboard/app.js
+fi
 
 python3 deepseek_delegate.py \
   --route-only \

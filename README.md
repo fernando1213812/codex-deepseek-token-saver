@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-Current version: **v2.3.0**. See [changelog](docs/changelog.md).
+Current version: **v2.4.0**. See [changelog](docs/changelog.md).
 
 Delegate low-risk Codex work to DeepSeek, log DeepSeek token usage, and estimate
 how many Codex tokens were saved. GPT-5.5 stays responsible for review and final
@@ -23,19 +23,19 @@ Codex/GPT-5.5 should still handle final review, safety checks, and correctness
 gates. This repo provides a small standard-library Python CLI plus a Codex skill
 that makes that split explicit.
 
-## What's New In v2.3
+## What's New In v2.4
 
-- Add `deepseek_reasonix.py`, a Codex orchestrator that creates or reuses an
-  Agent Room, posts a Codex brief, scaffolds a Reasonix skill pack, runs a
-  Reasonix execution pass, then runs a strict Reasonix self-review pass before
-  Codex performs final review.
-- Add multi-agent Reasonix body mode with mandatory implementer, tester, and
-  critic subagents plus optional docs subagents for larger project work.
-- Add `--skill-name`, `--skill-brief`, and `--image-brief` handoff fields so
-  Codex can pass triggered-skill guidance and non-multimodal visual context
-  into the cheaper execution loop.
-- Extend transcript export so room events now show Reasonix artifact paths,
-  prompt paths, and transcript paths for easier auditing.
+- Add `deepseek_room_server.py`, a visual room dashboard with live SSE updates,
+  room history, timeline view, jobs, events, transcripts, and artifacts.
+- Add `deepseek_room_desktop.py`, a native Mac desktop shell that opens the
+  room console in a pywebview window and remembers the selected workspace.
+- Add `scripts/build_mac_app.sh` plus generated icon tooling so the console can
+  be packaged as a Mac `.app`.
+- Redesign the dashboard into a chat-client layout inspired by QQ/WeChat:
+  room list on the left, live conversation in the center, operational
+  inspector on the right.
+- Keep the v2.3 Reasonix orchestrator flow, including mandatory multi-agent
+  execution, self-review, and Codex final audit.
 
 ## Routing Policy
 
@@ -128,6 +128,27 @@ python3 deepseek_reasonix.py \
 
 This flow is designed for "one instruction in, cheap multi-agent execution in
 the room, Codex final review out" while keeping Codex's token share low.
+
+Run the visual room server in a browser:
+
+```sh
+python3 deepseek_room_server.py --host 127.0.0.1 --port 8765
+```
+
+Launch the native Mac desktop shell:
+
+```sh
+python3 deepseek_room_desktop.py
+```
+
+Build the Mac `.app` bundle:
+
+```sh
+sh scripts/build_mac_app.sh
+```
+
+The frozen desktop app stores its remembered workspace and startup log in
+`~/Library/Application Support/Reasonix Room Console/`.
 
 Export the latest readable worker or room transcript:
 

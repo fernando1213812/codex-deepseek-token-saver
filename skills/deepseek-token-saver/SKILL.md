@@ -151,6 +151,21 @@ python3 skills/deepseek-token-saver/scripts/deepseek_reasonix.py \
   "Create the room and prompts only."
 ```
 
+Visual room console (preferred when the user wants to watch the room like a
+chat client, inspect history, or keep a room open while work continues):
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_room_server.py \
+  --host 127.0.0.1 \
+  --port 8765
+```
+
+Native Mac desktop shell:
+
+```sh
+python3 skills/deepseek-token-saver/scripts/deepseek_room_desktop.py
+```
+
 Agent Room orchestration (preferred when the user asks for multiple agents in
 one channel, cheap writer + expensive reviewer loops, or "打回重做"):
 

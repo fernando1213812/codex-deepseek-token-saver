@@ -612,6 +612,39 @@ def command_run(args: argparse.Namespace) -> int:
         return 2
 
     next_round = int(state.get("round") or 0) + 1
+    execution_transcript_path = runtime.transcripts / f"round-{next_round:02d}-execution.jsonl"
+    execution_prompt_path = runtime.prompts / f"round-{next_round:02d}-execution.md"
+    execution_system_path = runtime.prompts / f"round-{next_round:02d}-execution.system.md"
+    running_runtime_state = {
+        "workspace_root": str(workspace_root),
+        "model": args.reasonix_model,
+        "subagent_model": args.subagent_model,
+        "reasonix_home": str(runtime.home),
+        "config_path": str(runtime.config),
+        "skills_path": str(runtime.skills),
+        "target_codex_token_share": args.target_codex_share,
+        "main_transcript_path": str(execution_transcript_path),
+    }
+    room.append_jsonl(
+        paths.events,
+        {
+            "timestamp": room.utc_now(),
+            "event": "reasonix_execution_started",
+            "phase": "execution",
+            "model": args.reasonix_model,
+            "transcript_path": str(execution_transcript_path),
+            "prompt_path": str(execution_prompt_path),
+            "system_path": str(execution_system_path),
+            "target_codex_token_share": args.target_codex_share,
+        },
+    )
+    room.update_state(
+        paths,
+        {
+            "status": "reasonix-running",
+            "reasonix_runtime": running_runtime_state,
+        },
+    )
     execution = run_reasonix_task(
         workspace_root=workspace_root,
         runtime=runtime,
@@ -662,6 +695,21 @@ def command_run(args: argparse.Namespace) -> int:
     self_review_artifact: Path | None = None
     self_review: ReasonixRunResult | None = None
     if execution.returncode == 0 and not args.skip_self_review:
+        self_review_transcript_path = runtime.transcripts / f"round-{next_round:02d}-self-review.jsonl"
+        self_review_prompt_path = runtime.prompts / f"round-{next_round:02d}-self-review.md"
+        self_review_system_path = runtime.prompts / f"round-{next_round:02d}-self-review.system.md"
+        room.append_jsonl(
+            paths.events,
+            {
+                "timestamp": room.utc_now(),
+                "event": "reasonix_self_review_started",
+                "phase": "self-review",
+                "model": args.reasonix_model,
+                "transcript_path": str(self_review_transcript_path),
+                "prompt_path": str(self_review_prompt_path),
+                "system_path": str(self_review_system_path),
+            },
+        )
         review_prompt = build_self_review_prompt(
             room_id=room_id,
             execution_output=execution.stdout or execution.stderr,

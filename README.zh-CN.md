@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-当前版本：**v2.3.0**。参见 [更新日志](docs/changelog.md)。
+当前版本：**v2.4.0**。参见 [更新日志](docs/changelog.md)。
 
 把低风险、非最终阶段的 Codex 工作委托给 DeepSeek，记录 DeepSeek token 用量，并估算节省了多少 Codex token。GPT-5.5 仍然负责审核和最终正确性。
 
@@ -18,12 +18,13 @@ DeepSeek 很适合承担大量上下文和过程型工作，成本很低。但 C
 
 这个仓库提供一个只依赖 Python 标准库的小 CLI，以及一个 Codex skill，把“DeepSeek 负责过程，GPT-5.5 负责最终审核”的边界写清楚。
 
-## v2.3 新增内容
+## v2.4 新增内容
 
-- 新增 `deepseek_reasonix.py`，让 Codex 可以先建 Agent Room、写 orchestrator brief、生成 Reasonix skill pack，再让 Reasonix 跑执行和自审，最后交回 Codex 做最终审核。
-- 新增 Reasonix body mode，强制至少启用 implementer、tester、critic 三类子智能体；较大任务还可以加 docs 子智能体。
-- 新增 `--skill-name`、`--skill-brief`、`--image-brief`，让 Codex 能把已触发 skill 的摘要和图片文字说明传给不支持多模态的 DeepSeek/Reasonix。
-- 扩展 transcript 导出，room 事件现在会显示 Reasonix 的 artifact path、prompt path 和 transcript path，便于追溯。
+- 新增 `deepseek_room_server.py`，提供可视化 room 控制台，支持 SSE 实时刷新、房间历史、时间线、jobs、events、transcripts 和 artifacts。
+- 新增 `deepseek_room_desktop.py`，提供原生 Mac 桌面壳，用 pywebview 打开 room 控制台，并记住上次选择的 workspace。
+- 新增 `scripts/build_mac_app.sh` 和图标生成脚本，可以直接打包出 Mac `.app`。
+- 仪表盘改成更像 QQ/微信 的聊天客户端布局：左侧房间列表，中间实时对话，右侧操作/审查信息。
+- 保留 v2.3 的 Reasonix orchestrator 流程：强制多智能体执行、自审，以及 Codex 最终审核。
 
 ## 路由策略
 
@@ -115,6 +116,27 @@ python3 deepseek_reasonix.py \
 ```
 
 这个模式适合“用户给一句话，房间里跑便宜多智能体流程，Codex 最后把关”的场景，目标是把 Codex token 占比压低。
+
+在浏览器里运行可视化 room 服务：
+
+```sh
+python3 deepseek_room_server.py --host 127.0.0.1 --port 8765
+```
+
+启动原生 Mac 桌面壳：
+
+```sh
+python3 deepseek_room_desktop.py
+```
+
+打包 Mac `.app`：
+
+```sh
+sh scripts/build_mac_app.sh
+```
+
+冻结后的桌面版会把 workspace 记忆和启动日志写到：
+`~/Library/Application Support/Reasonix Room Console/`
 
 导出最新 worker 或 room 的可读聊天记录：
 
